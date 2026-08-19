@@ -1,6 +1,10 @@
 (() => {
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const roleLabel = r => ({moderator:'Модератор',director:'Директор',admin:'Администратор',stylist:'Стилист',online_manager:'Онлайн-менеджер'}[r] || r || '');
+  const shown = (v) => {
+    const s = String(v ?? '').trim();
+    return !s || s.toLowerCase() === 'undefined' || s.toLowerCase() === 'null' ? '—' : s;
+  };
+  const roleLabel = r => ({moderator:'Модератор',director:'Директор',admin:'Администратор',stylist:'Стилист',online_manager:'Онлайн-менеджер'}[r] || shown(r));
 
   async function getMe(){ try { const r=await fetch('/api/me',{credentials:'same-origin'}); if(!r.ok)return null; return (await r.json()).user; } catch { return null; } }
 
@@ -25,7 +29,7 @@
     </div>`;
     document.body.appendChild(wrap);
     const creds=data.credentials||[];
-    const render=(q='')=>{ const s=q.trim().toLowerCase(); document.getElementById('crn-cred-body').innerHTML=creds.filter(e=>!s||`${e.surname} ${e.firstname} ${e.store} ${roleLabel(e.role)} ${e.id}`.toLowerCase().includes(s)).map(e=>`<tr style="border-bottom:1px solid #eee"><td style="padding:9px">${esc(e.surname)} ${esc(e.firstname)}</td><td style="padding:9px">${esc(roleLabel(e.role))}</td><td style="padding:9px">${esc(e.store)}</td><td style="padding:9px;font-weight:700">${esc(e.login)}</td><td style="padding:9px;font-weight:700">${esc(e.pin)}</td></tr>`).join(''); };
+    const render=(q='')=>{ const s=q.trim().toLowerCase(); document.getElementById('crn-cred-body').innerHTML=creds.filter(e=>!s||`${e.surname} ${e.firstname} ${e.store} ${roleLabel(e.role)} ${e.id}`.toLowerCase().includes(s)).map(e=>`<tr style="border-bottom:1px solid #eee"><td style="padding:9px">${esc(shown(e.surname))} ${esc(shown(e.firstname))}</td><td style="padding:9px">${esc(roleLabel(e.role))}</td><td style="padding:9px">${esc(shown(e.store))}</td><td style="padding:9px;font-weight:700">${esc(shown(e.login))}</td><td style="padding:9px;font-weight:700">${esc(shown(e.pin))}</td></tr>`).join(''); };
     render();
     document.getElementById('crn-cred-search').oninput=e=>render(e.target.value);
     document.getElementById('crn-close').onclick=()=>wrap.remove();
