@@ -1,55 +1,72 @@
 import { callClaude } from "../../../lib/anthropic";
+import { requireUser, isOwnerModerator } from "../../../lib/auth";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Метод не поддерживается" });
 
   try {
+    const requester = await requireUser(req, res);
+    if (!requester) return;
+    if (!isOwnerModerator(requester)) {
+      return res.status(403).json({ error: "Создание тестов через ИИ доступно только модератору" });
+    }
+
     const { topic } = req.body || {};
     if (!topic || !topic.trim()) return res.status(400).json({ error: "Укажите тему нового блока" });
 
-    const system = `Ты — методист корпоративного обучения для премиальной розничной сети одежды и обуви в Казахстане (бренды CORNELI и CRINZO).
-Тебе нужно сгенерировать НОВЫЙ учебный блок для дашборда обучения стилистов на заданную тему.
+    const system = `Ты — старший методист CRN Academy для премиального fashion-retail в Казахстане (CORNELI и CRINZO).
+Создай практический учебный блок на заданную тему для стилистов/администраторов магазинов.
 
-Отвечай СТРОГО в формате JSON, без пояснений до или после, без markdown-разметки, без \`\`\`.
-
-Формат объекта:
+Отвечай СТРОГО JSON без markdown и пояснений:
 {
-  "key": "korotkiy_klyuch_latinicey_bez_probelov",
-  "title": "Название блока на русском",
-  "theory": ["4 коротких пункта теории"],
-  "script": {"who": "Ситуация/контекст", "line": "Готовая фраза-скрипт"},
-  "caseStudy": {"scenario": "Короткое описание реального кейса из розницы", "question": "Вопрос к стажёру по кейсу"},
-  "checklist": ["4 пункта чек-листа для самопроверки"],
+  "key": "unique_key_latin",
+  "title": "Название блока",
+  "theory": ["4-6 конкретных тезисов"],
+  "script": {"who": "Контекст", "line": "Готовая фраза сотрудника"},
+  "caseStudy": {"scenario": "Реальный retail-кейс", "question": "Вопрос по кейсу"},
+  "checklist": ["4-6 наблюдаемых действий"],
   "quiz": [
-    {"q": "Текст вопроса 1", "options": ["Вариант A","Вариант B","Вариант C","Вариант D"], "correct": 0},
-    "... ровно 10 таких объектов суммарно ..."
+    {"q": "Вопрос", "options": ["A","B","C","D"], "correct": 0, "explanation": "Почему ответ верный"}
   ]
 }
 
-Требования к содержанию:
-- Контент практичный, без "воды", подходит для реальной работы в магазине одежды/обуви.
-- Учитывай специфику розницы Казахстана, где уместно (тенге, менталитет покупателя, локальные примеры).
-- "correct" — индекс правильного варианта в массиве options (от 0 до 3).
-- Ровно 10 вопросов в quiz, ровно 4 варианта в каждом options.
-- key должен быть уникальным и осмысленным (например: psychology_kz, service_recovery, upsell_accessories_2).`;
+Правила качества:
+- ровно 10 вопросов;
+- ровно 4 варианта ответа;
+- один однозначно лучший ответ;
+- вопросы проверяют применение знаний, а не угадывание терминов;
+- минимум 4 вопроса должны быть ситуационными;
+- никакой воды и очевидных вариантов-шуток;
+- учитывай премиальный сервис, CRM, удалённую оплату, выездной гардероб, ателье/подшив, доставку покупок клиенту, когда это релевантно теме;
+- не добавляй скидки как основной инструмент продажи;
+- correct — индекс 0-3;
+- explanation — короткое учебное объяснение.`;
 
-    const userMsg = `Тема нового учебного блока: ${topic.trim()}`;
-    const text = await callClaude([{ role: "user", content: userMsg }], { system, maxTokens: 3000 });
+    const text = await callClaude(
+      [{ role: "user", content: `Тема нового учебного блока: ${topic.trim()}` }],
+      { system, maxTokens: 3600 }
+    );
 
     let block;
     try {
       const cleaned = text.trim().replace(/^```json\s*/i, "").replace(/```$/, "").trim();
       block = JSON.parse(cleaned);
-    } catch (e) {
-      return res.status(502).json({ error: "ИИ вернул ответ в неожиданном формате. Попробуйте ещё раз или переформулируйте тему.", raw: text });
+    } catch {
+      return res.status(502).json({ error: "ИИ вернул некорректный JSON. Повторите генерацию." });
     }
 
-    if (!block.key || !block.title || !Array.isArray(block.quiz)) {
-      return res.status(502).json({ error: "ИИ вернул неполный блок. Попробуйте ещё раз.", raw: text });
+    if (!block.key || !block.title || !Array.isArray(block.quiz) || block.quiz.length !== 10) {
+      return res.status(502).json({ error: "ИИ вернул неполный учебный блок" });
     }
 
-    return res.status(200).json({ block });
+    const quizValid = block.quiz.every((q) =>
+      q && typeof q.q === "string" && Array.isArray(q.options) && q.options.length === 4 && Number.isInteger(q.correct) && q.correct >= 0 && q.correct <= 3
+    );
+    if (!quizValid) return res.status(502).json({ error: "ИИ вернул некорректную структуру теста" });
+
+    return res.status(200).json({ block, status: "draft" });
   } catch (err) {
-    return res.status(err.code === "NO_API_KEY" ? 400 : 500).json({ error: err.message });
+    const status = err.code === "NO_API_KEY" ? 400 : err.status === 401 ? 401 : err.status === 403 ? 403 : err.status === 429 ? 429 : 500;
+    return res.status(status).json({ error: err.message || "Ошибка генерации теста", code: err.code || null });
   }
 }
