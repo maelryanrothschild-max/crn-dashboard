@@ -9,6 +9,7 @@ export default function Document() {
         <script src="/session-guard.js" defer />
         <script src="/practice-tools.js" defer />
         <script src="/sales-profile.js" defer />
+        <script src="/employee360.js" defer />
         <NextScript />
       </body>
     </Html>
