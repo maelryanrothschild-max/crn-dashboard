@@ -2,6 +2,7 @@ import { callClaude } from "../../../lib/anthropic";
 import { redis } from "../../../lib/redis";
 import { BLOCK_META } from "../../../lib/blockMeta";
 import { requireUser, getRoster, isOwnerModerator } from "../../../lib/auth";
+import { buildLocalEmployeeAnalysis } from "../../../lib/localEmployeeAnalysis";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Метод не поддерживается" });
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
     const requester = await requireUser(req, res);
     if (!requester) return;
     if (!isOwnerModerator(requester)) {
-      return res.status(403).json({ error: "ИИ-анализ сотрудников доступен только модератору" });
+      return res.status(403).json({ error: "Анализ сотрудников доступен только модератору" });
     }
 
     const { id } = req.body || {};
@@ -35,52 +36,32 @@ export default async function handler(req, res) {
       };
     });
 
-    const completed = results.filter((r) => r.score !== null);
-    const avgScore = completed.length
-      ? Math.round((completed.reduce((sum, r) => sum + r.score, 0) / completed.length) * 10) / 10
-      : null;
-
+    const local = buildLocalEmployeeAnalysis(emp, results);
     const system = `Ты — CRN AI Coach, эксперт по развитию сотрудников премиального fashion-retail.
-Твоя задача — анализировать только рабочие и учебные данные сотрудника и давать управленческий профиль для модератора Академии.
-
-КРИТИЧЕСКИ ВАЖНО:
-- не ставь медицинские или психологические диагнозы;
-- не утверждай личностные качества как факты, если они не подтверждены данными;
-- поведенческие выводы формулируй как рабочие гипотезы, которые нужно проверить на встрече 1:1;
-- не используй чувствительные характеристики человека;
-- отделяй наблюдаемые данные от интерпретаций.
+Анализируй только рабочие и учебные данные. Не ставь медицинские или психологические диагнозы, не утверждай личностные качества как факты и не используй чувствительные характеристики. Поведенческие выводы формулируй только как рабочие гипотезы для проверки на 1:1.
 
 Ответ дай на русском языке в 6 коротких разделах:
-1. Итог по обучению — прогресс, средний балл, сильные темы.
-2. Зоны развития — 1-3 конкретных слабых блока и почему они важны в магазине.
-3. Рабочий поведенческий профиль — только осторожные гипотезы на основе паттерна результатов.
-4. Что проверить на 1:1 — 3 конкретных вопроса сотруднику.
-5. План развития на 7 дней — 3 практических действия в магазине.
-6. Контроль — что измерить через 7 дней.
-
+1. Итог по обучению.
+2. Зоны развития.
+3. Рабочий профиль по данным обучения.
+4. Что проверить на 1:1 — 3 вопроса.
+5. План развития на 7 дней — 3 действия.
+6. Контроль через 7 дней.
 Пиши конкретно, профессионально, без воды. Не более 450 слов.`;
 
     const userMsg = JSON.stringify({
-      employee: {
-        firstname: emp.firstname,
-        surname: emp.surname,
-        role: emp.role,
-        store: emp.store || "—",
-        city: emp.city || "—",
-        brand: emp.brand || "—",
-      },
-      summary: {
-        completedTests: completed.length,
-        totalBlocks: results.length,
-        avgScore,
-      },
+      employee: { firstname: emp.firstname, surname: emp.surname, role: emp.role, store: emp.store || "—", city: emp.city || "—", brand: emp.brand || "—" },
+      summary: local.summary,
       results,
     }, null, 2);
 
-    const text = await callClaude([{ role: "user", content: userMsg }], { system, maxTokens: 1400 });
-    return res.status(200).json({ analysis: text.trim(), summary: { completedTests: completed.length, totalBlocks: results.length, avgScore } });
+    try {
+      const text = await callClaude([{ role: "user", content: userMsg }], { system, maxTokens: 1400 });
+      return res.status(200).json({ analysis: text.trim(), summary: local.summary, provider: "Anthropic", fallback: false });
+    } catch (aiErr) {
+      return res.status(200).json({ ...local, fallback: true, aiWarning: aiErr.message || "Внешний ИИ недоступен" });
+    }
   } catch (err) {
-    const status = err.code === "NO_API_KEY" ? 400 : err.status === 401 ? 401 : err.status === 403 ? 403 : err.status === 429 ? 429 : 500;
-    return res.status(status).json({ error: err.message || "Ошибка ИИ-анализа", code: err.code || null });
+    return res.status(500).json({ error: err.message || "Ошибка анализа сотрудника" });
   }
 }
