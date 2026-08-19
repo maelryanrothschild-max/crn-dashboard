@@ -12,7 +12,7 @@
     wrap.innerHTML=`<div style="position:fixed;inset:0;background:rgba(20,27,40,.64);z-index:99980"></div>
     <div style="position:fixed;z-index:99981;left:5%;right:5%;top:5%;bottom:5%;background:#fff;border-radius:8px;overflow:auto;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.3)">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;position:sticky;top:-24px;background:#fff;padding:14px 0;border-bottom:1px solid #ddd;z-index:2">
-        <div><h2 style="margin:0;color:#1B2436">Практика в магазине</h2><div style="font-size:13px;color:#666;margin-top:4px">Знания закрепляются действием. Отмечай только реально выполненные задания.</div></div>
+        <div><h2 style="margin:0;color:#1B2436">Практика в магазине</h2><div style="font-size:13px;color:#666;margin-top:4px">${esc(me.firstname||'')} ${esc(me.surname||'')} · отмечай только реально выполненные задания.</div></div>
         <button id="crn-practice-close" style="padding:10px 14px;background:#1B2436;color:#fff;border:0;border-radius:4px;cursor:pointer">Закрыть</button>
       </div>
       <div id="crn-practice-status" style="margin:14px 0;font-size:13px"></div>
@@ -40,14 +40,5 @@
       catch(e){ box.textContent='Ошибка: '+e.message; }
     };
   }
-
-  async function mount(){
-    const me=await getMe(); let b=document.getElementById('crn-practice-btn');
-    if(!me){ if(b)b.remove(); return; }
-    if(b)return;
-    b=document.createElement('button'); b.id='crn-practice-btn'; b.textContent='Практика';
-    b.style.cssText='position:fixed;left:18px;bottom:18px;z-index:99970;background:#1B2436;color:#fff;border:0;border-radius:5px;padding:11px 15px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.2)';
-    b.onclick=openPractice; document.body.appendChild(b);
-  }
-  setInterval(mount,2000); setTimeout(mount,1000);
+  window.openCRNPractice=openPractice;
 })();
