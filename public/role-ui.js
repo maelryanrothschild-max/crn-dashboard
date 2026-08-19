@@ -1,23 +1,22 @@
 (()=>{
   const norm=s=>String(s||'').trim().toLowerCase();
-  let user=null;
+  let user=null, observer=null, running=false;
 
   async function loadUser(){
     try{const r=await fetch('/api/me',{credentials:'same-origin',cache:'no-store'});if(!r.ok)return null;return (await r.json()).user||null}catch{return null}
   }
-
-  function removeTabByText(text){
-    document.querySelectorAll('.tab-btn').forEach(el=>{if(norm(el.textContent)===norm(text))el.remove();});
+  function exactText(el,text){return norm(el?.textContent)===norm(text)}
+  function removeNamedControls(names){
+    const wanted=new Set(names.map(norm));
+    document.querySelectorAll('.tab-btn,button,a,[role="button"]').forEach(el=>{
+      if(wanted.has(norm(el.textContent))) el.remove();
+    });
   }
-
-  function lockDirectorRoster(){
-    if(!user||user.role!=='director')return;
-    const bodyText=norm(document.body?.innerText);
-    if(!bodyText.includes('добавить сотрудника вручную') && !bodyText.includes('массовая загрузка из excel')) return;
-
-    document.querySelectorAll('table.team').forEach(t=>t.remove());
-    document.querySelectorAll('button,.small-btn').forEach(b=>{if(norm(b.textContent)==='удалить')b.remove();});
-
+  function isRosterPage(){
+    const t=norm(document.body?.innerText);
+    return t.includes('добавить сотрудника вручную')||t.includes('массовая загрузка из excel');
+  }
+  function lockDirectorFields(){
     document.querySelectorAll('.roster-form input,.roster-form select').forEach(el=>{
       const n=norm(el.name||el.id||'');
       const label=norm(el.closest('.field')?.querySelector('label')?.textContent||'');
@@ -25,33 +24,49 @@
       if(n.includes('city')||label==='город'){el.value=user.city||'';el.disabled=true;}
       if(n.includes('brand')||label==='бренд'){el.value=user.brand||'';el.disabled=true;}
     });
+    document.querySelectorAll('.roster-form select').forEach(sel=>{
+      const label=norm(sel.closest('.field')?.querySelector('label')?.textContent||'');
+      if(label==='должность'){
+        [...sel.options].forEach(o=>{if(['director','moderator','директор','модератор'].includes(norm(o.value)||norm(o.textContent)))o.remove()});
+      }
+    });
   }
-
+  function stripDirectorRosterList(){
+    if(!isRosterPage())return;
+    // Keep only manual add + Excel import. Any staff listing below them is moderator-only.
+    document.querySelectorAll('table.team, table').forEach(t=>t.remove());
+    document.querySelectorAll('.small-btn,button').forEach(b=>{if(exactText(b,'Удалить'))b.remove()});
+    document.querySelectorAll('[data-employee-id],.employee-list,.roster-list').forEach(el=>el.remove());
+    lockDirectorFields();
+  }
+  function escapeForbiddenPage(){
+    const t=norm(document.body?.innerText);
+    if(t.includes('ии-генерация новых блоков обучения')||t.includes('уже добавленные ии-блоки')||t.includes('резервная копия данных')){
+      if(typeof window.setTab==='function'){try{window.setTab('team')}catch{}}
+    }
+  }
   function enforceDirector(){
     if(!user||user.role!=='director')return;
-    removeTabByText('ИИ-блоки');
-    removeTabByText('Резервная копия');
-
-    const txt=norm(document.body?.innerText);
-    if(txt.includes('ии-генерация новых блоков обучения')||txt.includes('резервная копия данных')){
-      if(typeof window.setTab==='function') window.setTab('team');
-    }
-
-    lockDirectorRoster();
+    removeNamedControls(['ИИ-блоки','Резервная копия']);
+    escapeForbiddenPage();
+    stripDirectorRosterList();
   }
-
   function enforceBasicUser(){
     if(!user||!['stylist','admin','online_manager'].includes(user.role))return;
-    ['Команда','Рейтинг','Сотрудники','ИИ-блоки','Резервная копия'].forEach(removeTabByText);
+    removeNamedControls(['Команда','Рейтинг','Сотрудники','ИИ-блоки','Резервная копия']);
   }
-
   function run(){
-    if(!user)return;
-    enforceDirector();
-    enforceBasicUser();
+    if(running||!user)return;running=true;
+    try{enforceDirector();enforceBasicUser()}finally{running=false}
   }
-
-  async function boot(){user=await loadUser();run();const mo=new MutationObserver(run);mo.observe(document.documentElement,{childList:true,subtree:true});setInterval(run,1200)}
+  async function boot(){
+    user=await loadUser();run();
+    if(observer)observer.disconnect();
+    observer=new MutationObserver(()=>requestAnimationFrame(run));
+    observer.observe(document.body||document.documentElement,{childList:true,subtree:true});
+    setInterval(run,500);
+  }
   window.addEventListener('crn:session',e=>{user=e.detail||null;run()});
-  setTimeout(boot,500);
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,150));
+  setTimeout(boot,350);
 })();
