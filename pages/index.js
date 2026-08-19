@@ -113,7 +113,9 @@ export default function Home() {
         <div className="loading-note">Загрузка…</div>
       </div>
       <Script src="/xlsx.full.min.js" strategy="beforeInteractive" />
+      <Script src="/session-guard.js" strategy="beforeInteractive" />
       <Script src="/app.js" strategy="afterInteractive" />
+      <Script src="/moderator-tools.js" strategy="afterInteractive" />
     </>
   );
 }
