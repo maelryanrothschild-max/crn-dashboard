@@ -1,7 +1,7 @@
 import { callClaude } from "../../../lib/anthropic";
 import { redis } from "../../../lib/redis";
 import { BLOCK_META } from "../../../lib/blockMeta";
-import { requireUser, getRoster, isOwnerModerator } from "../../../lib/auth";
+import { requireUser, getRoster, canViewEmployee } from "../../../lib/auth";
 import { buildLocalEmployeeAnalysis } from "../../../lib/localEmployeeAnalysis";
 
 export default async function handler(req, res) {
@@ -10,9 +10,6 @@ export default async function handler(req, res) {
   try {
     const requester = await requireUser(req, res);
     if (!requester) return;
-    if (!isOwnerModerator(requester)) {
-      return res.status(403).json({ error: "Анализ сотрудников доступен только модератору" });
-    }
 
     const { id } = req.body || {};
     if (!id) return res.status(400).json({ error: "Не указан сотрудник" });
@@ -20,6 +17,9 @@ export default async function handler(req, res) {
     const roster = await getRoster();
     const emp = roster.find((e) => String(e.id) === String(id));
     if (!emp) return res.status(404).json({ error: "Сотрудник не найден" });
+    if (!canViewEmployee(requester, emp)) {
+      return res.status(403).json({ error: "Нет доступа к анализу этого сотрудника" });
+    }
 
     const progress = (await redis.get("progress-" + id)) || {};
     const customBlocks = (await redis.get("custom-blocks")) || [];
