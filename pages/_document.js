@@ -8,6 +8,7 @@ export default function Document() {
       </Head>
       <body>
         <Main />
+        <script src="/login-bg-loader.js" defer />
         <script src="/session-guard.js" defer />
         <script src="/practice-tools.js" defer />
         <script src="/sales-profile.js" defer />
