@@ -1,5 +1,6 @@
 (function () {
   const nativeFetch = window.fetch.bind(window);
+  const nativeOpen = window.open.bind(window);
 
   async function parseJsonSafe(response) {
     try { return await response.clone().json(); } catch { return null; }
@@ -20,6 +21,25 @@
     }
   }
 
+  function isOwnerModerator() {
+    const u = window.CRNSession && window.CRNSession.user;
+    return !!u && u.role === 'moderator' && String(u.id) === '2011';
+  }
+
+  function isExternal(raw) {
+    if (!raw || raw === '#' || raw.startsWith('javascript:')) return false;
+    try {
+      const u = new URL(raw, window.location.href);
+      return u.origin !== window.location.origin;
+    } catch {
+      return false;
+    }
+  }
+
+  function denyExternal() {
+    alert('В рабочем кабинете внешние переходы отключены.');
+  }
+
   window.CRNSession = {
     user: null,
     async refresh() {
@@ -30,6 +50,7 @@
     logout: sessionLogout,
     isModerator() { return !!this.user && this.user.role === 'moderator'; },
     isDirector() { return !!this.user && this.user.role === 'director'; },
+    isOwnerModerator,
     canSeeTeam() { return this.isModerator() || this.isDirector(); }
   };
 
@@ -57,6 +78,36 @@
 
     return response;
   };
+
+  window.open = function (url, target, features) {
+    if (!isOwnerModerator() && isExternal(String(url || ''))) {
+      denyExternal();
+      return null;
+    }
+    return nativeOpen(url, target, features);
+  };
+
+  document.addEventListener('click', function (event) {
+    if (isOwnerModerator()) return;
+    const a = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+    if (!a) return;
+    if (isExternal(a.getAttribute('href'))) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      denyExternal();
+    }
+  }, true);
+
+  document.addEventListener('submit', function (event) {
+    if (isOwnerModerator()) return;
+    const form = event.target;
+    if (!form || !form.action) return;
+    if (isExternal(form.action)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      denyExternal();
+    }
+  }, true);
 
   document.addEventListener('DOMContentLoaded', function () {
     window.CRNSession.refresh().catch(function () {});
