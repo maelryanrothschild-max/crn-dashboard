@@ -2,13 +2,14 @@ import { redis } from "../../lib/redis";
 import { DEFAULT_ROSTER } from "../../lib/defaultRoster";
 import { requireUser, safeUser, isOwnerModerator } from "../../lib/auth";
 
-const ALLOWED_ROLES = new Set(["stylist", "admin", "director"]);
-const DIRECTOR_ADD_ROLES = new Set(["stylist", "admin"]);
+const ALLOWED_ROLES = new Set(["stylist", "admin", "online_manager", "director"]);
+const DIRECTOR_ADD_ROLES = new Set(["stylist", "admin", "online_manager"]);
 
 function normalizeRole(role) {
   const value = String(role || "").trim().toLowerCase();
   if (value === "stylist" || value === "стилист" || value === "стилист-консультант") return "stylist";
   if (value === "admin" || value === "administrator" || value === "админ" || value === "администратор") return "admin";
+  if (value === "online_manager" || value === "online manager" || value === "онлайн-менеджер" || value === "онлайн менеджер") return "online_manager";
   if (value === "director" || value === "директор" || value === "директор магазина") return "director";
   return null;
 }
@@ -32,7 +33,7 @@ function cleanEmployeeInput(emp, user) {
   const role = normalizeRole(emp.role);
   if (!role || !ALLOWED_ROLES.has(role)) return { error: "Неизвестная роль сотрудника" };
   if (!isOwnerModerator(user) && !DIRECTOR_ADD_ROLES.has(role)) {
-    return { error: "Директор может добавлять только стилистов и администраторов" };
+    return { error: "Директор может добавлять стилистов, администраторов и онлайн-менеджеров" };
   }
 
   const store = isOwnerModerator(user) ? String(emp.store || "").trim() : String(user.store || "").trim();
