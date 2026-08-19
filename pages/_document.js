@@ -13,6 +13,7 @@ export default function Document() {
         <script src="/sales-profile.js" defer />
         <script src="/employee360.js" defer />
         <script src="/attention-dashboard.js" defer />
+        <script src="/role-ui.js" defer />
         <NextScript />
       </body>
     </Html>
