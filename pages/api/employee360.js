@@ -39,6 +39,7 @@ export default async function handler(req,res){
     const weakest=[...completed].sort((a,b)=>a.score-b.score).slice(0,3);
     const strongest=[...completed].sort((a,b)=>b.score-a.score).slice(0,3);
     const ps=practiceStats(pr);
+    const salesProfile=profile?.result ? {...profile.result,completedAt:profile.completedAt||null} : (profile||null);
     const attention=[];
     if(completed.length < BLOCK_META.length) attention.push(`Не завершено модулей: ${BLOCK_META.length-completed.length}`);
     if(weakest.some(x=>x.score<70)) attention.push("Есть учебные темы ниже 70%");
@@ -49,7 +50,7 @@ export default async function handler(req,res){
       employee:{id:employee.id,name:employee.name || [employee.surname,employee.firstname].filter(Boolean).join(' '),role:employee.role,store:employee.store,city:employee.city,brand:employee.brand},
       academy:{completed:completed.length,total:BLOCK_META.length,completion:pct(completed.length,BLOCK_META.length),average,strongest,weakest,modules},
       practice:{done:ps.done,total:ps.total,completion:pct(ps.done,ps.total),raw:pr},
-      salesProfile:profile||null,
+      salesProfile,
       attention,
       status: attention.length===0 ? "stable" : attention.length<=2 ? "watch" : "attention"
     });
