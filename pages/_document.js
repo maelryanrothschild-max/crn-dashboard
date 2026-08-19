@@ -7,6 +7,7 @@ export default function Document() {
       <body>
         <Main />
         <script src="/session-guard.js" defer />
+        <script src="/practice-tools.js" defer />
         <NextScript />
       </body>
     </Html>
