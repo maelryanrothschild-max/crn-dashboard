@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-label="CRN GROUP">
+  <rect width="1200" height="520" fill="#17284f"/>
+  <text x="125" y="305" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="118" font-weight="500" letter-spacing="2">CRN</text>
+  <g transform="translate(455 155)">
+    <path d="M12 12 L48 160" fill="none" stroke="#db8738" stroke-width="11" stroke-linecap="round"/>
+    <path d="M15 15 C70 42 124 31 170 49 C194 58 216 56 232 58 L230 112 C185 118 153 140 112 143 C92 143 83 137 99 128 C118 117 126 102 119 96 C91 85 62 104 45 112 L18 17 Z" fill="#db8738"/>
+    <circle cx="8" cy="12" r="7" fill="#db8738"/>
+  </g>
+  <text x="640" y="305" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="118" font-weight="500" letter-spacing="2">GROUP</text>
+</svg>
