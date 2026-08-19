@@ -3,7 +3,9 @@ import { Html, Head, Main, NextScript } from 'next/document';
 export default function Document() {
   return (
     <Html lang="ru">
-      <Head />
+      <Head>
+        <link rel="stylesheet" href="/login-brand.css" />
+      </Head>
       <body>
         <Main />
         <script src="/session-guard.js" defer />
