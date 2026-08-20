@@ -1,14 +1,11 @@
-import { redis } from "../../lib/redis";
-import { DEFAULT_ROSTER } from "../../lib/defaultRoster";
-import { createSessionCookie, safeUser } from "../../lib/auth";
+import { createSessionCookie, safeUser, getRoster } from "../../lib/auth";
 import { resolveDirectorScope } from "../../lib/directorScope";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Метод не поддерживается" });
   try {
     const { surname, pin } = req.body || {};
-    let roster = await redis.get("roster");
-    if (!roster) { roster = DEFAULT_ROSTER; await redis.set("roster", roster); }
+    const roster = await getRoster();
 
     const s = String(surname || "").trim().toLowerCase();
     const p = String(pin || "").trim();
