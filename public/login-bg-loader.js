@@ -5,7 +5,7 @@
   async function loadFinalBackground(){
     if(dataUrl) return dataUrl;
     if(!loading){
-      loading=Promise.all([1,2,3,4,5,6].map(i=>fetch(`/crn-bg-parts/part${i}.txt`,{cache:'force-cache'}).then(r=>{
+      loading=Promise.all([1,2,3,4,5,6].map(i=>fetch(`/crn-bg-parts/part${i}.txt?v=final10`,{cache:'no-store'}).then(r=>{
         if(!r.ok) throw new Error(`CRN background part ${i} unavailable`);
         return r.text();
       }))).then(parts=>{
@@ -14,17 +14,6 @@
       });
     }
     return loading;
-  }
-
-  function ensureBrandLayer(wrap){
-    if(!wrap) return;
-    let brand=wrap.querySelector('.crn-login-brand');
-    if(!brand){
-      brand=document.createElement('div');
-      brand.className='crn-login-brand';
-      brand.innerHTML='<img src="/crn-logo.svg?v=2" alt="CRN GROUP"><div class="crn-login-motto">ЕДИНСТВО • РОСТ • МАСТЕРСТВО</div><div class="crn-login-welcome">Добро пожаловать в Академию CRN GROUP</div>';
-      wrap.appendChild(brand);
-    }
   }
 
   function tuneForViewport(wrap){
@@ -41,7 +30,7 @@
   async function applyFinalBackground(){
     const wrap=document.querySelector('.login-wrap');
     if(!wrap) return;
-    ensureBrandLayer(wrap);
+    document.querySelectorAll('.crn-login-brand').forEach(el=>el.remove());
     try{
       const url=await loadFinalBackground();
       wrap.style.setProperty('background-color','#06152d','important');
@@ -54,13 +43,7 @@
     }
   }
 
-  function sync(){
-    const wrap=document.querySelector('.login-wrap');
-    if(wrap){ ensureBrandLayer(wrap); applyFinalBackground(); }
-    document.querySelectorAll('.crn-login-brand').forEach(el=>{
-      if(!el.closest('.login-wrap')) el.remove();
-    });
-  }
+  function sync(){ applyFinalBackground(); }
 
   document.addEventListener('DOMContentLoaded',()=>{
     sync();
