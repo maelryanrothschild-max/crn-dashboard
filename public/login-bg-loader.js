@@ -16,6 +16,17 @@
     return loading;
   }
 
+  function ensureBrandLayer(wrap){
+    if(!wrap) return;
+    let brand=wrap.querySelector('.crn-login-brand');
+    if(!brand){
+      brand=document.createElement('div');
+      brand.className='crn-login-brand';
+      brand.innerHTML='<img src="/crn-logo.svg?v=2" alt="CRN GROUP"><div class="crn-login-motto">ЕДИНСТВО • РОСТ • МАСТЕРСТВО</div><div class="crn-login-welcome">Добро пожаловать в Академию CRN GROUP</div>';
+      wrap.appendChild(brand);
+    }
+  }
+
   function tuneForViewport(wrap){
     if(!wrap) return;
     if(window.matchMedia('(max-width: 640px)').matches){
@@ -30,6 +41,7 @@
   async function applyFinalBackground(){
     const wrap=document.querySelector('.login-wrap');
     if(!wrap) return;
+    ensureBrandLayer(wrap);
     try{
       const url=await loadFinalBackground();
       wrap.style.setProperty('background-color','#06152d','important');
@@ -42,7 +54,13 @@
     }
   }
 
-  function sync(){ applyFinalBackground(); }
+  function sync(){
+    const wrap=document.querySelector('.login-wrap');
+    if(wrap){ ensureBrandLayer(wrap); applyFinalBackground(); }
+    document.querySelectorAll('.crn-login-brand').forEach(el=>{
+      if(!el.closest('.login-wrap')) el.remove();
+    });
+  }
 
   document.addEventListener('DOMContentLoaded',()=>{
     sync();
