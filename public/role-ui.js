@@ -6,11 +6,17 @@
     try{const r=await fetch('/api/me',{credentials:'same-origin',cache:'no-store'});if(!r.ok)return null;return (await r.json()).user||null}catch{return null}
   }
   function exactText(el,text){return norm(el?.textContent)===norm(text)}
+  function isOwner(){return !!user && user.role==='moderator' && String(user.id)==='2011'}
   function removeNamedControls(names){
     const wanted=new Set(names.map(norm));
     document.querySelectorAll('.tab-btn,button,a,[role="button"]').forEach(el=>{
       if(wanted.has(norm(el.textContent))) el.remove();
     });
+  }
+  function removeOwnerOnlyUI(){
+    if(isOwner()) return;
+    removeNamedControls(['Доступы и штат','Управление сотрудниками и доступами']);
+    document.querySelectorAll('#crn-mod-tools-btn,#crn-mod-tools').forEach(el=>el.remove());
   }
   function isRosterPage(){
     const t=norm(document.body?.innerText);
@@ -33,7 +39,6 @@
   }
   function stripDirectorRosterList(){
     if(!isRosterPage())return;
-    // Keep only manual add + Excel import. Any staff listing below them is moderator-only.
     document.querySelectorAll('table.team, table').forEach(t=>t.remove());
     document.querySelectorAll('.small-btn,button').forEach(b=>{if(exactText(b,'Удалить'))b.remove()});
     document.querySelectorAll('[data-employee-id],.employee-list,.roster-list').forEach(el=>el.remove());
@@ -57,7 +62,7 @@
   }
   function run(){
     if(running||!user)return;running=true;
-    try{enforceDirector();enforceBasicUser()}finally{running=false}
+    try{removeOwnerOnlyUI();enforceDirector();enforceBasicUser()}finally{running=false}
   }
   async function boot(){
     user=await loadUser();run();
