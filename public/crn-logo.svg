@@ -1,9 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-label="CRN GROUP">
-  <text x="105" y="225" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="132" font-weight="500" letter-spacing="2">CRN</text>
-  <g transform="translate(455 72)">
-    <path d="M12 12 L48 160" fill="none" stroke="#f28a2e" stroke-width="11" stroke-linecap="round"/>
-    <path d="M15 15 C70 42 124 31 170 49 C194 58 216 56 232 58 L230 112 C185 118 153 140 112 143 C92 143 83 137 99 128 C118 117 126 102 119 96 C91 85 62 104 45 112 L18 17 Z" fill="#f28a2e"/>
-    <circle cx="8" cy="12" r="7" fill="#f28a2e"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 903 395" role="img" aria-labelledby="title desc">
+<title id="title">CRN GROUP</title><desc id="desc">CRN GROUP official wordmark with orange flag</desc>
+<g transform="translate(90 105)">
+  <text x="0" y="105" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="92" font-weight="500" letter-spacing="1">CRN</text>
+  <g transform="translate(250 8)">
+    <path d="M14 18 L48 135" fill="none" stroke="#df8738" stroke-width="9" stroke-linecap="round"/>
+    <path d="M17 18 C58 30 84 45 138 50 C143 82 141 99 134 112 C94 105 80 91 47 82 C40 59 31 37 17 18 Z" fill="#df8738"/>
+    <path d="M85 79 C105 69 122 73 138 77 C127 87 115 94 99 98 C94 92 89 86 85 79 Z" fill="#182d5d"/>
   </g>
-  <text x="640" y="225" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="132" font-weight="500" letter-spacing="2">GROUP</text>
+  <text x="430" y="105" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="92" font-weight="500" letter-spacing="1">GROUP</text>
+  <text x="241" y="115" fill="#df8738" font-family="Arial,Helvetica,sans-serif" font-size="18">®</text>
+</g>
 </svg>
