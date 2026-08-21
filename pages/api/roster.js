@@ -1,9 +1,10 @@
 import { redis } from "../../lib/redis";
 import { DEFAULT_ROSTER } from "../../lib/defaultRoster";
-import { requireUser, safeUser, isOwnerModerator } from "../../lib/auth";
+import { requireUser, safeUser, isOwnerModerator, getRoster } from "../../lib/auth";
 
 const ALLOWED_ROLES = new Set(["stylist", "admin", "online_manager", "director"]);
 const DIRECTOR_ADD_ROLES = new Set(["stylist", "admin", "online_manager"]);
+const norm = (v) => String(v || "").trim().toLocaleLowerCase("ru-RU");
 
 function normalizeRole(role) {
   const value = String(role || "").trim().toLowerCase();
@@ -14,9 +15,16 @@ function normalizeRole(role) {
   return null;
 }
 
+function isRegionalDirector(user) {
+  return !!user && user.role === "director" && user.store === "Все магазины" && !!user.brand;
+}
+
 function visibleRoster(user, roster) {
   if (isOwnerModerator(user)) return roster.map(safeUser);
   if (user.role === "director") {
+    if (isRegionalDirector(user)) {
+      return roster.filter((e) => norm(e.brand) === norm(user.brand)).map(safeUser);
+    }
     if (!user.store || user.store === "Все магазины") return [safeUser(user)];
     return roster.filter((e) => e.store === user.store).map(safeUser);
   }
@@ -36,8 +44,15 @@ function cleanEmployeeInput(emp, user) {
     return { error: "Директор может добавлять стилистов, администраторов и онлайн-менеджеров" };
   }
 
-  const store = isOwnerModerator(user) ? String(emp.store || "").trim() : String(user.store || "").trim();
+  const regional = isRegionalDirector(user);
+  const store = isOwnerModerator(user) || regional
+    ? String(emp.store || "").trim()
+    : String(user.store || "").trim();
   if (!store || store === "Все магазины") return { error: "Для сотрудника должен быть указан конкретный магазин" };
+
+  const brand = isOwnerModerator(user)
+    ? String(emp.brand || "").trim()
+    : String(user.brand || "").trim();
 
   return {
     value: {
@@ -46,7 +61,7 @@ function cleanEmployeeInput(emp, user) {
       role,
       city: String(emp.city || user.city || "").trim(),
       store,
-      brand: String(emp.brand || user.brand || "").trim(),
+      brand,
     },
   };
 }
@@ -67,7 +82,7 @@ export default async function handler(req, res) {
     const user = await requireUser(req, res);
     if (!user) return;
 
-    let roster = (await redis.get("roster")) || DEFAULT_ROSTER;
+    let roster = await getRoster();
 
     if (req.method === "GET") {
       return res.status(200).json({ roster: visibleRoster(user, roster) });
