@@ -25,6 +25,7 @@ export default function Home() {
       <Script src="/xlsx.full.min.js" strategy="beforeInteractive" />
       <Script src="/session-guard.js" strategy="beforeInteractive" />
       <Script src="/app.js" strategy="afterInteractive" />
+      <Script src="/i18n.js?v=1" strategy="afterInteractive" />
       <Script src="/login-bg-loader.js?v=final10" strategy="afterInteractive" />
       <Script src="/moderator-tools.js?v=owner2" strategy="afterInteractive" />
     </>
