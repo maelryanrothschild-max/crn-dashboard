@@ -35,6 +35,7 @@ export default function Home() {
       <Script src="/micro-learning.js?v=1" strategy="afterInteractive" />
       <Script src="/money-mindset.js?v=1" strategy="afterInteractive" />
       <Script src="/upt-3.js?v=1" strategy="afterInteractive" />
+      <Script src="/sale-review.js?v=1" strategy="afterInteractive" />
     </>
   );
 }
