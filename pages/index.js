@@ -21,6 +21,8 @@ export default function Home() {
       <Script src="/client-lab.js?v=2" strategy="afterInteractive" />
       <Script src="/client-lab-expansion.js?v=1" strategy="afterInteractive" />
       <Script src="/micro-learning.js?v=1" strategy="afterInteractive" />
+      <Script src="/money-mindset.js?v=1" strategy="afterInteractive" />
+      <Script src="/upt-3.js?v=1" strategy="afterInteractive" />
     </>
   );
 }
