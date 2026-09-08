@@ -20,6 +20,7 @@ export default function Home() {
       <Script src="/materials-advanced.js?v=1" strategy="afterInteractive" />
       <Script src="/client-lab.js?v=2" strategy="afterInteractive" />
       <Script src="/client-lab-expansion.js?v=1" strategy="afterInteractive" />
+      <Script src="/micro-learning.js?v=1" strategy="afterInteractive" />
     </>
   );
 }
