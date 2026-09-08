@@ -18,6 +18,7 @@ export default function Home() {
       <Script src="/moderator-tools.js?v=owner2" strategy="afterInteractive" />
       <Script src="/fabric-intelligence.js?v=fabric9" strategy="afterInteractive" />
       <Script src="/materials-advanced.js?v=1" strategy="afterInteractive" />
+      <Script src="/client-lab.js?v=1" strategy="afterInteractive" />
     </>
   );
 }
