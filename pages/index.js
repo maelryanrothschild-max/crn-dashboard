@@ -28,6 +28,7 @@ export default function Home() {
       <Script src="/i18n.js?v=2" strategy="afterInteractive" />
       <Script src="/login-bg-loader.js?v=final10" strategy="afterInteractive" />
       <Script src="/moderator-tools.js?v=owner2" strategy="afterInteractive" />
+      <Script src="/fabric-intelligence.js?v=cotton1" strategy="afterInteractive" />
     </>
   );
 }
