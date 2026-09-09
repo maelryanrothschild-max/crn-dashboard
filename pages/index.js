@@ -38,6 +38,7 @@ export default function Home() {
       <Script src="/sale-review.js?v=1" strategy="afterInteractive" />
       <Script src="/role-academy.js?v=1" strategy="afterInteractive" />
       <Script src="/crn-certification.js?v=1" strategy="afterInteractive" />
+      <Script src="/academy-hub.js?v=1" strategy="afterInteractive" />
     </>
   );
 }
