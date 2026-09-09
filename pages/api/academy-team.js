@@ -1,0 +1,34 @@
+import { redis } from "../../lib/redis";
+import { requireUser, getRoster, canViewEmployee, isOwnerModerator, safeUser } from "../../lib/auth";
+
+const KEYS=["crn_client_lab_advanced","crn_micro_learning","crn_money_mindset","crn_upt3","crn_sale_reviews","crn_role_academy","crn_material_polyester","crn_material_nylon","crn_material_elastane","crn_material_acrylic","crn_material_denim","crn_material_leather","crn_material_suede","crn_material_composition"];
+const dbKey=id=>`academy_progress:${String(id)}`;
+const readObj=(p,k)=>p&&p[k]&&typeof p[k]==="object"?p[k]:{};
+const countObj=o=>Array.isArray(o)?o.length:Object.keys(o||{}).length;
+function evidence(progress={}){
+  const lab=Object.values(readObj(progress,"crn_client_lab_advanced")).filter(x=>x&&x.passed).length;
+  const micro=countObj(readObj(progress,"crn_micro_learning"));
+  const money=countObj(readObj(progress,"crn_money_mindset"));
+  const upt=countObj(readObj(progress,"crn_upt3"));
+  const sale=countObj(progress.crn_sale_reviews||{});
+  const role=Object.values(readObj(progress,"crn_role_academy")).filter(x=>x&&x.done).length;
+  const materials=KEYS.filter(k=>k.startsWith("crn_material_")).reduce((n,k)=>n+(progress[k]?1:0),0);
+  return{lab,micro,money,upt,sale,role,materials};
+}
+function score(e){let s=0;s+=Math.min(20,e.lab*3);s+=Math.min(15,e.micro*3);s+=Math.min(15,e.money*3);s+=Math.min(15,e.upt*3);s+=Math.min(15,e.sale*5);s+=Math.min(20,e.role*5);return Math.min(100,s)}
+function level(s){if(s>=100)return"EXPERT";if(s>=75)return"PREMIUM STYLIST";if(s>=50)return"SENIOR STYLIST";if(s>=25)return"CERTIFIED STYLIST";return"TRAINEE"}
+function gaps(e){const g=[];if(e.lab<3)g.push("CLIENT LAB");if(e.micro<3)g.push("MICRO LEARNING");if(e.money<3)g.push("MONEY MINDSET");if(e.upt<3)g.push("UPT 3.0");if(e.sale<1)g.push("SALE REVIEW");if(e.role<1)g.push("ROLE MISSION");if(e.materials<4)g.push("PRODUCT INTELLIGENCE");return g}
+function isRegional(u){return !!u&&u.role==="director"&&u.store==="Все магазины"}
+export default async function handler(req,res){
+ try{
+  const user=await requireUser(req,res);if(!user)return;
+  if(req.method!=="GET")return res.status(405).json({error:"Метод не поддерживается"});
+  if(!isOwnerModerator(user)&&user.role!=="director")return res.status(403).json({error:"TEAM DEVELOPMENT доступен руководителям"});
+  const roster=await getRoster();
+  const visible=roster.filter(e=>String(e.id)!==String(user.id)&&canViewEmployee(user,e));
+  const rows=await Promise.all(visible.map(async e=>{const rec=await redis.get(dbKey(e.id));const ev=evidence(rec?.progress||{}),s=score(ev);return{employee:safeUser(e),score:s,level:level(s),evidence:ev,gaps:gaps(ev),updatedAt:rec?.updatedAt||null}}));
+  rows.sort((a,b)=>a.score-b.score||String(a.employee?.surname||"").localeCompare(String(b.employee?.surname||""),"ru"));
+  const avg=rows.length?Math.round(rows.reduce((n,x)=>n+x.score,0)/rows.length):0;
+  return res.status(200).json({scope:isOwnerModerator(user)?"all":isRegional(user)?"brand":"store",summary:{employees:rows.length,avg,atRisk:rows.filter(x=>x.score<25).length,certified:rows.filter(x=>x.score>=25).length},rows});
+ }catch(err){return res.status(500).json({error:"Ошибка Academy Team Dashboard",details:String(err)});}
+}
