@@ -37,6 +37,7 @@ export default function Home() {
       <Script src="/upt-3.js?v=1" strategy="afterInteractive" />
       <Script src="/sale-review.js?v=1" strategy="afterInteractive" />
       <Script src="/role-academy.js?v=1" strategy="afterInteractive" />
+      <Script src="/crn-certification.js?v=1" strategy="afterInteractive" />
     </>
   );
 }
