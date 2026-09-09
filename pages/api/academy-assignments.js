@@ -4,7 +4,7 @@ import { requireUser, getRoster, canViewEmployee, isOwnerModerator, safeUser } f
 const key=id=>`academy_assignments:${String(id)}`;
 const isManager=u=>!!u&&(isOwnerModerator(u)||u.role==="director");
 const allowedModules=["CLIENT LAB","MICRO LEARNING","MONEY MINDSET","UPT 3.0","SALE REVIEW","ROLE MISSION","PRODUCT INTELLIGENCE"];
-const clean=s=>String(s||"").trim().slice(0,300);
+const clean=(s,n=300)=>String(s||"").trim().slice(0,n);
 async function read(id){const x=await redis.get(key(id));return Array.isArray(x)?x:[]}
 async function write(id,items){await redis.set(key(id),items)}
 
@@ -32,12 +32,15 @@ export default async function handler(req,res){
    items.unshift(item);await write(employeeId,items.slice(0,50));return res.status(201).json({item});
   }
   if(req.method==="PATCH"){
-   const employeeId=String(req.body?.employeeId||user.id);const id=clean(req.body?.id);const action=clean(req.body?.action);
+   const employeeId=String(req.body?.employeeId||user.id),id=clean(req.body?.id),action=clean(req.body?.action);
    const employee=roster.find(e=>String(e.id)===employeeId);if(!employee)return res.status(404).json({error:"Сотрудник не найден"});
    const own=employeeId===String(user.id);if(!own&&(!isManager(user)||!canViewEmployee(user,employee)))return res.status(403).json({error:"Нет доступа"});
-   const items=await read(employeeId);const item=items.find(x=>x.id===id);if(!item)return res.status(404).json({error:"Назначение не найдено"});
-   if(action==="complete"&&own){item.status="completed";item.completedAt=new Date().toISOString()}
-   else if(action==="reopen"&&isManager(user)){item.status="assigned";delete item.completedAt}
+   const items=await read(employeeId),item=items.find(x=>x.id===id);if(!item)return res.status(404).json({error:"Назначение не найдено"});
+   const now=new Date().toISOString();
+   if(action==="complete"&&own){if(item.status!=="assigned"&&item.status!=="revision")return res.status(400).json({error:"Назначение уже отправлено на проверку"});item.status="pending_review";item.completedAt=now;delete item.reviewedAt;delete item.reviewedBy}
+   else if(action==="approve"&&isManager(user)&&!own){if(item.status!=="pending_review")return res.status(400).json({error:"Задание не ожидает проверки"});item.status="approved";item.reviewedAt=now;item.managerComment=clean(req.body?.comment,500);item.reviewedBy={id:String(user.id),surname:clean(user.surname),firstname:clean(user.firstname)}}
+   else if(action==="revision"&&isManager(user)&&!own){if(item.status!=="pending_review")return res.status(400).json({error:"Задание не ожидает проверки"});const comment=clean(req.body?.comment,500);if(!comment)return res.status(400).json({error:"Напишите, что нужно доработать"});item.status="revision";item.managerComment=comment;item.reviewedAt=now;item.reviewedBy={id:String(user.id),surname:clean(user.surname),firstname:clean(user.firstname)};delete item.completedAt}
+   else if(action==="reopen"&&isManager(user)&&!own){item.status="assigned";delete item.completedAt;delete item.reviewedAt;delete item.reviewedBy;delete item.managerComment}
    else return res.status(400).json({error:"Недоступное действие"});
    await write(employeeId,items);return res.status(200).json({item});
   }
