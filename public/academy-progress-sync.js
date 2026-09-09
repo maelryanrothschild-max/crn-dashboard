@@ -8,6 +8,7 @@ function merge(remote){if(!remote||typeof remote!=='object')return;KEYS.forEach(
 async function hydrate(){try{const res=await fetch('/api/academy-progress',{credentials:'same-origin'});if(!res.ok)return;const data=await res.json();merge(data.progress);hydrated=true;last=sig(snapshot());await push(true)}catch(e){}}
 async function push(force){if(busy||!hydrated)return;const p=snapshot(),s=sig(p);if(!force&&s===last)return;busy=true;try{const res=await fetch('/api/academy-progress',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({progress:p})});if(res.ok){last=s;document.documentElement.dataset.academySynced='1'}}catch(e){}finally{busy=false}}
 function status(){return document.documentElement.dataset.academySynced==='1'?'SYNCED':'LOCAL'}
+function loadAssignments(){if(document.querySelector('script[data-crn-assignments]'))return;const s=document.createElement('script');s.src='/academy-assignments.js?v=1';s.dataset.crnAssignments='1';document.head.appendChild(s)}
 window.CRNAcademyProgress={sync:()=>push(true),snapshot,status};
-setTimeout(hydrate,1200);setInterval(()=>push(false),5000);window.addEventListener('beforeunload',()=>push(false));
+loadAssignments();setTimeout(hydrate,1200);setInterval(()=>push(false),5000);window.addEventListener('beforeunload',()=>push(false));
 })();
