@@ -40,6 +40,34 @@
     alert('В рабочем кабинете внешние переходы отключены.');
   }
 
+  function protectContent() {
+    const stop = function (event) {
+      const t = event.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+      event.preventDefault();
+    };
+    document.addEventListener('contextmenu', stop, true);
+    document.addEventListener('copy', stop, true);
+    document.addEventListener('cut', stop, true);
+    document.addEventListener('dragstart', stop, true);
+    document.addEventListener('keydown', function (event) {
+      const key = String(event.key || '').toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && ['s','p','u','c','a'].includes(key)) {
+        const t = event.target;
+        if ((key === 'c' || key === 'a') && t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+      if (event.key === 'F12' || ((event.ctrlKey || event.metaKey) && event.shiftKey && ['i','j','c'].includes(key))) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, true);
+    const style = document.createElement('style');
+    style.textContent = 'body{-webkit-user-select:none;user-select:none}input,textarea{-webkit-user-select:text;user-select:text}@media print{body{display:none!important}}';
+    document.head.appendChild(style);
+  }
+
   window.CRNSession = {
     user: null,
     async refresh() {
@@ -55,7 +83,7 @@
   };
 
   window.fetch = async function (input, init) {
-    const response = await nativeFetch(input, { ...(init || {}), credentials: 'same-origin' });
+    const response = await nativeFetch(input, { ...(init || {}), credentials: 'same-origin', cache: (init && init.cache) || 'no-store' });
     const url = typeof input === 'string' ? input : (input && input.url) || '';
 
     if (url.startsWith('/api/') && !url.startsWith('/api/login') && response.status === 401) {
@@ -109,6 +137,7 @@
     }
   }, true);
 
+  protectContent();
   document.addEventListener('DOMContentLoaded', function () {
     window.CRNSession.refresh().catch(function () {});
   });
