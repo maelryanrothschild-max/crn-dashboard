@@ -1,4 +1,4 @@
-import { createSessionCookie, safeUser, getRoster } from "../../lib/auth";
+import { createSessionCookie, safeUser, getRoster, isOwnerModerator } from "../../lib/auth";
 import { resolveDirectorScope } from "../../lib/directorScope";
 
 export default async function handler(req, res) {
@@ -13,6 +13,10 @@ export default async function handler(req, res) {
     if (!found) return res.status(401).json({ error: "Неверная фамилия или личный номер." });
 
     const scoped = resolveDirectorScope(found);
+    if (!isOwnerModerator(scoped)) {
+      return res.status(403).json({ error: "Доступ к дашборду временно закрыт владельцем." });
+    }
+
     res.setHeader("Set-Cookie", createSessionCookie(found));
     return res.status(200).json({ user: safeUser(scoped) });
   } catch (err) {
